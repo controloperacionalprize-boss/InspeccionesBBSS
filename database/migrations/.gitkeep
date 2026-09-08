@@ -1,0 +1,2 @@
+# Las migraciones se gestionan con Alembic en `backend/alembic/versions/`.
+# Este directorio queda preparado para scripts o documentación de esquema.

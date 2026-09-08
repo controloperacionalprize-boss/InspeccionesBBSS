@@ -1,0 +1,2 @@
+# Las migraciones de Alembic se generan en backend/alembic/versions/
+# Este directorio queda reservado para documentación o scripts de apoyo.

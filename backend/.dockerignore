@@ -1,0 +1,19 @@
+# Nunca debe entrar a la imagen: contiene secretos reales (DB, JWT).
+.env
+
+# Entorno virtual local (se reinstala dentro del contenedor vía requirements.txt)
+.venv/
+venv/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.git/
+.gitignore
+
+tests/

@@ -1,0 +1,40 @@
+:root {
+  --color-texto: #1c2a1f;
+  --color-texto-suave: #4d5b50;
+  --color-acento: #2e7d32;
+  --color-acento-oscuro: #1b5e20;
+  --color-borde: #d7e0d8;
+  --color-superficie: #ffffff;
+
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--color-texto);
+  background-color: #f5f7f4;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
