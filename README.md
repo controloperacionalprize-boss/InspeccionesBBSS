@@ -38,7 +38,7 @@ CORS_ORIGINS=http://localhost:5173
 
 JWT_SECRET_KEY=cambiar-esta-clave-en-produccion
 JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=480
+JWT_EXPIRE_MINUTES=60
 ```
 
 ### Frontend (`frontend/.env`)
@@ -49,12 +49,20 @@ VITE_API_URL=http://localhost:8000/api
 
 ## Arranque con Docker
 
-1. Copiar `.env.example` (raíz) a `.env` y definir `POSTGRES_USER`/`POSTGRES_PASSWORD` propios (solo se usan si `backend/.env` apunta su `DATABASE_URL` al servicio `postgres` de este compose).
-2. Asegurarse de que `backend/.env` exista con sus propias variables (no se sobreescriben en `docker-compose.yml`).
+Con **Neon** (u otra Postgres remota): `backend/.env` debe tener `DATABASE_URL` apuntando a ese host. No hace falta Postgres en compose.
 
 ```bash
 docker compose up --build
 ```
+
+Postgres **local** opcional (perfil `local-db`), si `DATABASE_URL` usa el host `postgres`:
+
+```bash
+docker compose --profile local-db up --build
+```
+
+1. Si usas el perfil `local-db`, copiar `.env.example` (raíz) a `.env` y definir `POSTGRES_USER`/`POSTGRES_PASSWORD`.
+2. Asegurarse de que `backend/.env` exista (JWT, `DATABASE_URL`, CORS). No se sobreescriben en `docker-compose.yml`.
 
 Servicios:
 
@@ -62,7 +70,7 @@ Servicios:
 |------------|------------------------|
 | Frontend   | http://localhost:3000  |
 | Backend    | http://localhost:8000  |
-| PostgreSQL | localhost:5432         |
+| PostgreSQL | localhost:5432 (solo con `--profile local-db`) |
 | Health     | http://localhost:8000/health |
 
 ## Arranque local (desarrollo)
@@ -70,7 +78,7 @@ Servicios:
 ### 1. Base de datos
 
 ```bash
-docker compose up postgres -d
+docker compose --profile local-db up postgres -d
 ```
 
 ### 2. Backend
@@ -85,7 +93,7 @@ python -m venv .venv
 # Linux / macOS
 # source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -107,7 +115,11 @@ cd backend
 # source .venv/bin/activate && pytest -v   # Linux/macOS
 ```
 
-The tests cubren la lógica de negocio pura (login, hashing de contraseñas, validaciones de referencias de Inspecciones) usando SQLite en memoria, sin depender de la base de datos real.
+The tests cubren login, hashing, validaciones de inspecciones y permisos HTTP (inspector vs admin) con SQLite en memoria, sin usar la base remota.
+
+## Fotos
+
+`URL_FOTO` en inspecciones es texto (URL o ruta). No hay bucket de Neon ni almacenamiento de objetos en esta etapa.
 
 ## Salud
 
@@ -126,13 +138,16 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 Las migraciones viven en `backend/alembic/versions/`.
 
+Las migraciones viven en `backend/alembic/versions/`. En una base **ya existente** (como el entorno de prueba) basta:
+
 ```bash
 cd backend
-alembic revision --autogenerate -m "descripcion"
 alembic upgrade head
 ```
 
-Todavía no hay tablas ni migraciones de negocio.
+En una Postgres **vacía**, `0001` crea las tablas base y el resto aplica índices, roles y DNI. Luego `alembic upgrade head` deja el esquema al día.
+
+Todavía no hay seeds de catálogos ni inspecciones.
 
 ## Endpoint de salud
 
@@ -242,8 +257,6 @@ Convención de nombres: código técnico en inglés (`health`, `router`, `sessio
 
 En esta base **no** se incluyen:
 
-- datos ficticios / seeds
-- autenticación
-- lógica de negocio
+- datos ficticios / seeds de catálogos o inspecciones
 - reportes o dashboards
-- módulos de Campo / Packing terminados
+- almacenamiento de fotos (solo el campo `URL_FOTO`)

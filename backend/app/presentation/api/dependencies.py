@@ -5,9 +5,12 @@ from collections.abc import Callable
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session, joinedload
 
 from app.domain.entities import Usuario
 from app.domain.roles import ROL_ADMIN
+from app.infrastructure.database.models import Usuario as UsuarioModel
+from app.infrastructure.database.session import get_session
 from app.infrastructure.security.jwt_handler import decode_access_token
 
 security_scheme = HTTPBearer(auto_error=False)
@@ -15,8 +18,9 @@ security_scheme = HTTPBearer(auto_error=False)
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+    session: Session = Depends(get_session),
 ) -> Usuario:
-    """Claims del JWT; no consulta la BD."""
+    """Valida el JWT y carga usuario/rol vigentes desde la BD."""
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,15 +39,33 @@ def get_current_user(
 
     subject = payload.get("sub")
     uid = payload.get("uid")
-    rol = payload.get("rol")
-    if subject is None or uid is None or rol is None:
+    if subject is None or uid is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return Usuario(id=int(uid), nombre="", apellido="", usuario=subject, rol=str(rol))
+    modelo = (
+        session.query(UsuarioModel)
+        .options(joinedload(UsuarioModel.rol))
+        .filter(UsuarioModel.USUARIO == subject, UsuarioModel.ID == int(uid))
+        .first()
+    )
+    if modelo is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado o token desactualizado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return Usuario(
+        id=modelo.ID,
+        nombre=modelo.NOMBRE,
+        apellido=modelo.APELLIDO,
+        usuario=modelo.USUARIO,
+        rol=modelo.rol.NOMBRE,
+    )
 
 
 def require_admin(usuario: Usuario = Depends(get_current_user)) -> Usuario:

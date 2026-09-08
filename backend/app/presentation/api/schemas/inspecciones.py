@@ -1,6 +1,5 @@
-"""Esquemas Pydantic para las inspecciones de Campo/Packing."""
-
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -14,11 +13,11 @@ class InspeccionBase(BaseModel):
     RANGO_HORA: datetime | None = None
     ID_CATEGORIA: int
     ID_SUBCATEGORIA: int
-    DESCRIPCION: str = Field(..., min_length=1)
-    URL_FOTO: str | None = None
-    ACCION_CORRECTIVA: str | None = None
-    PLAZO_LEVANTAMIENTO: str | None = None
-    TIPO_CONSULTA: str | None = None
+    DESCRIPCION: str = Field(..., min_length=1, max_length=8000)
+    URL_FOTO: str | None = Field(None, max_length=2048)
+    ACCION_CORRECTIVA: str | None = Field(None, max_length=8000)
+    PLAZO_LEVANTAMIENTO: str | None = Field(None, max_length=500)
+    TIPO_CONSULTA: Literal["Campo", "Packing"] | None = None
 
 
 class InspeccionCreate(InspeccionBase):

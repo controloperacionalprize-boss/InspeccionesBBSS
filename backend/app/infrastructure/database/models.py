@@ -16,7 +16,7 @@ class Empresa(Base):
     __tablename__ = "Empresas"
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(30), nullable=False)
 
     fundos: Mapped[list["Fundo"]] = relationship(back_populates="empresa")
 
@@ -25,7 +25,7 @@ class Division(Base):
     __tablename__ = "Division"
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(100), nullable=False)
 
     areas: Mapped[list["Area"]] = relationship(back_populates="division")
 
@@ -35,7 +35,7 @@ class Fundo(Base):
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
     ID_EMPRESA: Mapped[int] = mapped_column(ForeignKey("Empresas.ID"), nullable=False)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(50), nullable=False)
 
     empresa: Mapped["Empresa"] = relationship(back_populates="fundos")
 
@@ -45,7 +45,7 @@ class Area(Base):
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
     ID_DIVISION: Mapped[int] = mapped_column(ForeignKey("Division.ID"), nullable=False)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(100), nullable=False)
 
     division: Mapped["Division"] = relationship(back_populates="areas")
 
@@ -54,7 +54,7 @@ class Categoria(Base):
     __tablename__ = "Categoria"
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(150), nullable=False)
 
     subcategorias: Mapped[list["Subcategoria"]] = relationship(back_populates="categoria")
 
@@ -64,7 +64,7 @@ class Subcategoria(Base):
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
     ID_CATEGORIA: Mapped[int] = mapped_column(ForeignKey("Categoria.ID"), nullable=False)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(150), nullable=False)
 
     categoria: Mapped["Categoria"] = relationship(back_populates="subcategorias")
 
@@ -73,7 +73,7 @@ class Rol(Base):
     __tablename__ = "Roles"
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    NOMBRE: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
 
     usuarios: Mapped[list["Usuario"]] = relationship(back_populates="rol")
 
@@ -82,8 +82,8 @@ class Usuario(Base):
     __tablename__ = "Usuarios"
 
     ID: Mapped[int] = mapped_column(_id_identity(), primary_key=True)
-    NOMBRE: Mapped[str] = mapped_column(String, nullable=False)
-    APELLIDO: Mapped[str] = mapped_column(String, nullable=False)
+    NOMBRE: Mapped[str] = mapped_column(String(70), nullable=False)
+    APELLIDO: Mapped[str] = mapped_column(String(70), nullable=False)
     DNI: Mapped[str | None] = mapped_column(String(20), nullable=True)
     USUARIO: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     PASSWORD_HASH: Mapped[str] = mapped_column(Text, nullable=False)
@@ -116,5 +116,6 @@ class Inspeccion(Base):
         Index("ix_inspecciones_division", "ID_DIVISION"),
         Index("ix_inspecciones_area", "ID_AREA"),
         Index("ix_inspecciones_categoria", "ID_CATEGORIA"),
+        Index("ix_inspecciones_subcategoria", "ID_SUBCATEGORIA"),
         Index("ix_inspecciones_fecha", "FECHA_OBSERVACION"),
     )

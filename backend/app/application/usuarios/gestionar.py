@@ -1,7 +1,12 @@
 from sqlalchemy.orm import Session, joinedload
 
 from app.domain.entities import Usuario
-from app.domain.exceptions import RecursoNoEncontradoError, RolInvalidoError, UsuarioDuplicadoError
+from app.domain.exceptions import (
+    DatosInvalidosError,
+    RecursoNoEncontradoError,
+    RolInvalidoError,
+    UsuarioDuplicadoError,
+)
 from app.domain.roles import ROLES_VALIDOS
 from app.infrastructure.database.models import Rol
 from app.infrastructure.database.models import Usuario as UsuarioModel
@@ -37,6 +42,8 @@ def crear_usuario(
     rol: str,
     dni: str | None = None,
 ) -> Usuario:
+    if len(contrasena) < 8:
+        raise DatosInvalidosError("La contraseña debe tener al menos 8 caracteres")
     if session.query(UsuarioModel).filter(UsuarioModel.USUARIO == usuario).first():
         raise UsuarioDuplicadoError("El nombre de usuario ya existe")
 
@@ -103,6 +110,8 @@ def actualizar_usuario(
     modelo.DNI = dni
     modelo.ID_ROL = rol_modelo.ID
     if contrasena:
+        if len(contrasena) < 8:
+            raise DatosInvalidosError("La contraseña debe tener al menos 8 caracteres")
         modelo.PASSWORD_HASH = hash_password(contrasena)
 
     session.commit()

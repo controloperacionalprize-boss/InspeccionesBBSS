@@ -1,24 +1,28 @@
-"""Esquemas Pydantic para los catálogos base (con y sin FK simple)."""
-
 from pydantic import BaseModel, Field
 
 
-class CatalogoSimpleBase(BaseModel):
-    NOMBRE: str = Field(..., min_length=1)
+class EmpresaCreate(BaseModel):
+    NOMBRE: str = Field(..., min_length=1, max_length=30)
 
 
-class CatalogoSimpleCreate(CatalogoSimpleBase):
-    pass
+class EmpresaRead(EmpresaCreate):
+    ID: int
+
+    model_config = {"from_attributes": True}
 
 
-class CatalogoSimpleRead(CatalogoSimpleBase):
+class DivisionCreate(BaseModel):
+    NOMBRE: str = Field(..., min_length=1, max_length=100)
+
+
+class DivisionRead(DivisionCreate):
     ID: int
 
     model_config = {"from_attributes": True}
 
 
 class FundoBase(BaseModel):
-    NOMBRE: str = Field(..., min_length=1)
+    NOMBRE: str = Field(..., min_length=1, max_length=50)
     ID_EMPRESA: int
 
 
@@ -33,7 +37,7 @@ class FundoRead(FundoBase):
 
 
 class AreaBase(BaseModel):
-    NOMBRE: str = Field(..., min_length=1)
+    NOMBRE: str = Field(..., min_length=1, max_length=100)
     ID_DIVISION: int
 
 
@@ -47,8 +51,25 @@ class AreaRead(AreaBase):
     model_config = {"from_attributes": True}
 
 
+class CategoriaCreate(BaseModel):
+    NOMBRE: str = Field(..., min_length=1, max_length=150)
+
+
+class CategoriaRead(CategoriaCreate):
+    ID: int
+
+    model_config = {"from_attributes": True}
+
+
+class RolRead(BaseModel):
+    ID: int
+    NOMBRE: str
+
+    model_config = {"from_attributes": True}
+
+
 class SubcategoriaBase(BaseModel):
-    NOMBRE: str = Field(..., min_length=1)
+    NOMBRE: str = Field(..., min_length=1, max_length=150)
     ID_CATEGORIA: int
 
 

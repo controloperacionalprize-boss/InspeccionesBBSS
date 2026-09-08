@@ -1,9 +1,13 @@
 """Respuestas de error con forma única para el cliente."""
 
+import logging
+
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger("consultar_campo")
 
 
 def _cuerpo(codigo: str, detalle: str) -> dict[str, str]:
@@ -23,6 +27,7 @@ async def manejar_validacion(request: Request, exc: RequestValidationError) -> J
 
 
 async def manejar_integridad(request: Request, exc: IntegrityError) -> JSONResponse:
+    logger.warning("Conflicto de integridad en %s", request.url.path)
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content=_cuerpo(
@@ -33,6 +38,7 @@ async def manejar_integridad(request: Request, exc: IntegrityError) -> JSONRespo
 
 
 async def manejar_no_controlado(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Error no controlado en %s", request.url.path)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=_cuerpo("error_interno", "Ocurrió un error inesperado"),

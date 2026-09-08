@@ -7,7 +7,12 @@ from app.application.usuarios.gestionar import (
     listar_usuarios,
     obtener_usuario,
 )
-from app.domain.exceptions import RecursoNoEncontradoError, RolInvalidoError, UsuarioDuplicadoError
+from app.domain.exceptions import (
+    DatosInvalidosError,
+    RecursoNoEncontradoError,
+    RolInvalidoError,
+    UsuarioDuplicadoError,
+)
 from app.infrastructure.database.session import get_session
 from app.presentation.api.dependencies import require_admin
 from app.presentation.api.schemas.usuarios import UsuarioCreate, UsuarioRead, UsuarioUpdate
@@ -22,6 +27,8 @@ def _http_negocio(exc: Exception) -> HTTPException:
         return HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     if isinstance(exc, RecursoNoEncontradoError):
         return HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+    if isinstance(exc, DatosInvalidosError):
+        return HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     return HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
 
 
@@ -54,7 +61,7 @@ def crear(
             rol=datos.rol,
             dni=datos.dni,
         )
-    except (UsuarioDuplicadoError, RolInvalidoError, RecursoNoEncontradoError) as ext:
+    except (UsuarioDuplicadoError, RolInvalidoError, RecursoNoEncontradoError, DatosInvalidosError) as ext:
         raise _http_negocio(ext) from ext
     return UsuarioRead(
         id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol
@@ -93,7 +100,7 @@ def actualizar(
             dni=datos.dni,
             contrasena=datos.contrasena,
         )
-    except (RolInvalidoError, RecursoNoEncontradoError) as ext:
+    except (RolInvalidoError, RecursoNoEncontradoError, DatosInvalidosError) as ext:
         raise _http_negocio(ext) from ext
     return UsuarioRead(
         id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol

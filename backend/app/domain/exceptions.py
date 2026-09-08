@@ -12,3 +12,7 @@ class UsuarioDuplicadoError(Exception):
 
 class RolInvalidoError(Exception):
     pass
+
+
+class DatosInvalidosError(Exception):
+    pass

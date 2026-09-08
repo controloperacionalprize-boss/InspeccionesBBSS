@@ -15,6 +15,7 @@ from app.presentation.api.exception_handlers import (
     manejar_no_controlado,
     manejar_validacion,
 )
+from app.presentation.api.security_headers import SecurityHeadersMiddleware
 from app.presentation.api.rate_limit import limiter
 from app.presentation.api.router import api_router
 from app.presentation.api.routes import health
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         docs_url=docs_url,
         redoc_url=redoc_url,
+        openapi_url=None if settings.es_produccion else "/openapi.json",
     )
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -55,6 +57,7 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
     )
+    application.add_middleware(SecurityHeadersMiddleware)
 
     application.include_router(health.router)
     application.include_router(api_router)

@@ -10,8 +10,12 @@ from app.presentation.api.routes.catalogo_factory import crear_router_catalogo
 from app.presentation.api.schemas.catalogos import (
     AreaCreate,
     AreaRead,
-    CatalogoSimpleCreate,
-    CatalogoSimpleRead,
+    CategoriaCreate,
+    CategoriaRead,
+    DivisionCreate,
+    DivisionRead,
+    EmpresaCreate,
+    EmpresaRead,
     FundoCreate,
     FundoRead,
     SubcategoriaCreate,
@@ -22,24 +26,24 @@ router_empresas = crear_router_catalogo(
     prefix="/empresas",
     tag="Empresas",
     model=Empresa,
-    read_schema=CatalogoSimpleRead,
-    create_schema=CatalogoSimpleCreate,
+    read_schema=EmpresaRead,
+    create_schema=EmpresaCreate,
 )
 
 router_divisiones = crear_router_catalogo(
     prefix="/divisiones",
     tag="Divisiones",
     model=Division,
-    read_schema=CatalogoSimpleRead,
-    create_schema=CatalogoSimpleCreate,
+    read_schema=DivisionRead,
+    create_schema=DivisionCreate,
 )
 
 router_categorias = crear_router_catalogo(
     prefix="/categorias",
     tag="Categorías",
     model=Categoria,
-    read_schema=CatalogoSimpleRead,
-    create_schema=CatalogoSimpleCreate,
+    read_schema=CategoriaRead,
+    create_schema=CategoriaCreate,
 )
 
 router_fundos = crear_router_catalogo(
