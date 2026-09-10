@@ -1,6 +1,12 @@
-"""Endpoints de Inspecciones (consultas de Campo / Packing)."""
+"""Endpoints de Inspecciones (consultas de Campo / Packing).
 
-from datetime import date
+Borrado lógico: DELETE marca ELIMINADO=True en vez de borrar la fila. Así se
+conserva el histórico para auditoría y las fotos asociadas nunca quedan
+huérfanas (no hay cascada física). listar() oculta lo eliminado por defecto;
+obtener() por ID siempre lo muestra (para poder pedir el detalle igual).
+"""
+
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
@@ -29,6 +35,7 @@ def listar(
     tipo_consulta: str | None = Query(None),
     fecha_desde: date | None = Query(None),
     fecha_hasta: date | None = Query(None),
+    incluir_eliminados: bool = Query(False),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     session: Session = Depends(get_session),
@@ -37,6 +44,8 @@ def listar(
     """Lista inspecciones con filtros opcionales de campo, fecha y categoría."""
     consulta = session.query(Inspeccion)
 
+    if not incluir_eliminados:
+        consulta = consulta.filter(Inspeccion.ELIMINADO.is_(False))
     if id_empresa is not None:
         consulta = consulta.filter(Inspeccion.ID_EMPRESA == id_empresa)
     if id_fundo is not None:
@@ -70,6 +79,8 @@ def obtener(
     session: Session = Depends(get_session),
     _usuario=Depends(get_current_user),
 ) -> Inspeccion:
+    """Devuelve la inspección exista o no ELIMINADO=True: el detalle sigue
+    siendo consultable para efectos de auditoría."""
     inspeccion = session.get(Inspeccion, inspeccion_id)
     if inspeccion is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Inspección no encontrada")
@@ -108,6 +119,10 @@ def actualizar(
     inspeccion = session.get(Inspeccion, inspeccion_id)
     if inspeccion is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Inspección no encontrada")
+    if inspeccion.ELIMINADO:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No se puede editar una inspección eliminada"
+        )
 
     try:
         validar_referencias_inspeccion(session, datos)
@@ -132,12 +147,13 @@ def eliminar(
     session: Session = Depends(get_session),
     _usuario=Depends(require_admin),
 ) -> None:
+    """Borrado lógico: no se toca la fila ni sus fotos, solo se marca."""
     inspeccion = session.get(Inspeccion, inspeccion_id)
     if inspeccion is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Inspección no encontrada")
-    session.delete(inspeccion)
-    try:
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        raise
+    if inspeccion.ELIMINADO:
+        return
+
+    inspeccion.ELIMINADO = True
+    inspeccion.FECHA_ELIMINACION = datetime.now(timezone.utc)
+    session.commit()

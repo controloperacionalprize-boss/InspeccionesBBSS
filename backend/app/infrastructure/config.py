@@ -22,6 +22,19 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
 
+    # Object storage (Neon Object Storage, S3-compatible). Nombres alineados
+    # a los que genera el panel de Neon (convención estándar de boto3/AWS SDK).
+    # Opcionales: solo se exigen al usar los endpoints de fotos.
+    AWS_ENDPOINT_URL_S3: str | None = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_REGION: str = "us-east-2"
+    S3_BUCKET_NAME: str | None = None
+
+    # Conexión de solo lectura a la base de RRHH (RDS) para resolver
+    # DNI_TRABAJADOR -> nombres. Opcional: solo se exige al usar ese endpoint.
+    AWS_DATABASE_URL: str | None = None
+
     @field_validator("JWT_SECRET_KEY")
     @classmethod
     def _validar_jwt_secret(cls, valor: str) -> str:

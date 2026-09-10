@@ -14,7 +14,6 @@ class InspeccionBase(BaseModel):
     ID_CATEGORIA: int
     ID_SUBCATEGORIA: int
     DESCRIPCION: str = Field(..., min_length=1, max_length=8000)
-    URL_FOTO: str | None = Field(None, max_length=2048)
     ACCION_CORRECTIVA: str | None = Field(None, max_length=8000)
     PLAZO_LEVANTAMIENTO: str | None = Field(None, max_length=500)
     TIPO_CONSULTA: Literal["Campo", "Packing"] | None = None
@@ -26,5 +25,7 @@ class InspeccionCreate(InspeccionBase):
 
 class InspeccionRead(InspeccionBase):
     ID: int
+    ELIMINADO: bool
+    FECHA_ELIMINACION: datetime | None = None
 
     model_config = {"from_attributes": True}
