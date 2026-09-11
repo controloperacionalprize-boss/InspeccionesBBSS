@@ -30,8 +30,11 @@ class Trabajador:
 def _engine():
     if not settings.AWS_DATABASE_URL:
         raise RrhhNoConfiguradoError("Falta AWS_DATABASE_URL en el entorno.")
+    _url = settings.AWS_DATABASE_URL
+    if _url.startswith("postgresql://"):
+        _url = _url.replace("postgresql://", "postgresql+psycopg://", 1)
     return create_engine(
-        settings.AWS_DATABASE_URL,
+        _url,
         connect_args={"connect_timeout": 10},
         pool_pre_ping=True,
         pool_recycle=300,

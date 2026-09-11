@@ -5,10 +5,14 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.infrastructure.config import settings
 
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
 engine = create_engine(
-    settings.DATABASE_URL,
+    _db_url,
     pool_pre_ping=True,
-    pool_recycle=300,  # Neon cierra conexiones idle
+    pool_recycle=300,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
