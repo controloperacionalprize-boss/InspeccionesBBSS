@@ -29,6 +29,7 @@ def _a_entidad(modelo: UsuarioModel) -> Usuario:
         apellido=modelo.APELLIDO,
         usuario=modelo.USUARIO,
         rol=modelo.rol.NOMBRE,
+        dni=modelo.DNI,
     )
 
 

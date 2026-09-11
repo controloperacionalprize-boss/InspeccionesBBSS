@@ -39,7 +39,7 @@ def listar(
 ) -> list[UsuarioRead]:
     return [
         UsuarioRead(
-            id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol
+            id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol, dni=u.dni
         )
         for u in listar_usuarios(session)
     ]
@@ -64,7 +64,7 @@ def crear(
     except (UsuarioDuplicadoError, RolInvalidoError, RecursoNoEncontradoError, DatosInvalidosError) as ext:
         raise _http_negocio(ext) from ext
     return UsuarioRead(
-        id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol
+        id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol, dni=u.dni
     )
 
 
@@ -79,7 +79,7 @@ def obtener(
     except RecursoNoEncontradoError as ext:
         raise _http_negocio(ext) from ext
     return UsuarioRead(
-        id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol
+        id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol, dni=u.dni
     )
 
 
@@ -103,5 +103,5 @@ def actualizar(
     except (RolInvalidoError, RecursoNoEncontradoError, DatosInvalidosError) as ext:
         raise _http_negocio(ext) from ext
     return UsuarioRead(
-        id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol
+        id=u.id, nombre=u.nombre, apellido=u.apellido, usuario=u.usuario, rol=u.rol, dni=u.dni
     )

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     APP_ENV: str = "development"
     DATABASE_URL: str
-    CORS_ORIGINS: str = "http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000"
 
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"

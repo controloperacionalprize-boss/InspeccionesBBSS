@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.presentation.api.routes import (
     auth,
+    consolidados,
     consultas,
     fotos,
     indumentaria,
@@ -22,6 +23,7 @@ api_router.include_router(fotos.router)
 api_router.include_router(trabajadores.router)
 api_router.include_router(consultas.router)
 api_router.include_router(indumentaria.router)
+api_router.include_router(consolidados.router)
 
 for _router in todos_los_routers_catalogo:
     api_router.include_router(_router)

@@ -4,6 +4,7 @@ from logging import Logger
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError
@@ -56,11 +57,24 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["X-Total-Count"],
     )
     application.add_middleware(SecurityHeadersMiddleware)
+    # Los listados JSON comprimen ~80%: menos transferencia en redes móviles de campo.
+    application.add_middleware(GZipMiddleware, minimum_size=1024)
 
     application.include_router(health.router)
     application.include_router(api_router)
+
+    @application.get("/")
+    def raiz() -> dict[str, str]:
+        return {
+            "servicio": "Consultar Campo – Packing",
+            "salud": "/health",
+            "docs": "/docs",
+            "api": "/api",
+        }
+
     logger.info("Aplicación iniciada (entorno=%s)", settings.APP_ENV)
     return application
 

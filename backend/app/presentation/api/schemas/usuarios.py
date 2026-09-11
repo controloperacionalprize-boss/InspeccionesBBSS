@@ -21,4 +21,4 @@ class UsuarioUpdate(BaseModel):
 
 
 class UsuarioRead(UsuarioResponse):
-    pass
+    dni: str | None = None

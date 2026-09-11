@@ -8,3 +8,4 @@ class Usuario:
     apellido: str
     usuario: str
     rol: str
+    dni: str | None = None

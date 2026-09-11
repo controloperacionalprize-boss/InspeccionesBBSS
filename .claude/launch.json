@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend-preview",
+      "runtimeExecutable": "C:\\Users\\lperez.LPEREZPRUEBA\\OneDrive - AQUANQA\\Documentos\\ProyCtrlOpe\\ConsultasCampoPackingBBSS\\backend\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": ["C:\\Users\\LPEREZ~1.LPE\\AppData\\Local\\Temp\\claude\\C--Users-lperez-LPEREZPRUEBA-OneDrive---AQUANQA-Documentos-ProyCtrlOpe-ConsultasCampoPackingBBSS\\a10af01b-5953-4f74-a18e-90e840366955\\scratchpad\\preview_backend.py"],
+      "port": 8001
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}
