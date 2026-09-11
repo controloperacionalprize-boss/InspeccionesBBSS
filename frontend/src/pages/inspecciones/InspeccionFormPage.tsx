@@ -4,13 +4,14 @@ import { Page } from '../../components/AppShell'
 import { Button } from '../../components/Button'
 import { Alert, Notice, RegistroNoDisponible } from '../../components/Feedback'
 import { Field, Input, Textarea } from '../../components/Field'
-import { CategoriaFields, LocationFields, TipoConsultaField } from '../../components/LocationFields'
+import { CategoriaFields, LocationFields } from '../../components/LocationFields'
 import { PhotoUploader } from '../../components/PhotoUploader'
 import { Card, FormFooter } from '../../components/Surface'
 import { useCatalogos } from '../../hooks/useCatalogos'
 import { hoyIso } from '../../lib/fechas'
+import { tipoConsultaDesdeDivision } from '../../lib/tipoConsulta'
 import { api, ApiError } from '../../services/apiClient'
-import type { Foto, Inspeccion, TipoConsulta } from '../../types/api'
+import type { Foto, Inspeccion } from '../../types/api'
 
 interface EstadoNavegacion {
   guardado?: boolean
@@ -36,7 +37,6 @@ export function InspeccionFormPage() {
   const [DESCRIPCION, setDescripcion] = useState('')
   const [ACCION_CORRECTIVA, setAccion] = useState('')
   const [PLAZO_LEVANTAMIENTO, setPlazo] = useState('')
-  const [TIPO_CONSULTA, setTipo] = useState<TipoConsulta | ''>('')
   const [noDisponible, setNoDisponible] = useState(false)
   const [fotos, setFotos] = useState<Foto[]>([])
   const [archivos, setArchivos] = useState<File[]>([])
@@ -65,7 +65,6 @@ export function InspeccionFormPage() {
         setDescripcion(item.DESCRIPCION)
         setAccion(item.ACCION_CORRECTIVA ?? '')
         setPlazo(item.PLAZO_LEVANTAMIENTO ?? '')
-        setTipo(item.TIPO_CONSULTA ?? '')
         setNoDisponible(item.ELIMINADO)
       })
       .catch((err: Error) => (err instanceof ApiError && err.status === 404 ? setNoDisponible(true) : setError(err.message)))
@@ -87,7 +86,7 @@ export function InspeccionFormPage() {
     DESCRIPCION,
     ACCION_CORRECTIVA: ACCION_CORRECTIVA || null,
     PLAZO_LEVANTAMIENTO: PLAZO_LEVANTAMIENTO || null,
-    TIPO_CONSULTA: TIPO_CONSULTA || null,
+    TIPO_CONSULTA: tipoConsultaDesdeDivision(catalogos.divisiones, ID_DIVISION) || 'Campo',
   })
 
   const subirFotos = async (inspeccionId: number) => {
@@ -189,7 +188,7 @@ export function InspeccionFormPage() {
                   setSubcategoria(sub)
                 }}
               />
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Fecha de observación">
                   <Input
                     type="date"
@@ -202,7 +201,6 @@ export function InspeccionFormPage() {
                 <Field label="Hora (opcional)">
                   <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
                 </Field>
-                <TipoConsultaField value={TIPO_CONSULTA} onChange={setTipo} />
               </div>
               <Field label="Descripción">
                 <Textarea

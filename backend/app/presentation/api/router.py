@@ -10,6 +10,7 @@ from app.presentation.api.routes import (
     roles,
     trabajadores,
     usuarios,
+    tiempo_real,
 )
 from app.presentation.api.routes.catalogos import todos_los_routers_catalogo
 
@@ -24,6 +25,7 @@ api_router.include_router(trabajadores.router)
 api_router.include_router(consultas.router)
 api_router.include_router(indumentaria.router)
 api_router.include_router(consolidados.router)
+api_router.include_router(tiempo_real.router)
 
 for _router in todos_los_routers_catalogo:
     api_router.include_router(_router)

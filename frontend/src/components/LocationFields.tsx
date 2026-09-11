@@ -1,5 +1,7 @@
-import { Field, SegmentedControl, Select } from './Field'
-import type { Area, CatalogoItem, Fundo, Subcategoria, TipoConsulta } from '../types/api'
+import { TipoBadge } from './Feedback'
+import { Field, Select } from './Field'
+import { tipoConsultaDesdeDivision } from '../lib/tipoConsulta'
+import type { Area, CatalogoItem, Fundo, Subcategoria } from '../types/api'
 
 interface LocationValue {
   ID_EMPRESA: number | ''
@@ -25,6 +27,7 @@ export function LocationFields({
 }) {
   const fundosFiltrados = fundos.filter((item) => item.ID_EMPRESA === value.ID_EMPRESA)
   const areasFiltradas = areas.filter((item) => item.ID_DIVISION === value.ID_DIVISION)
+  const tipo = tipoConsultaDesdeDivision(divisiones, value.ID_DIVISION)
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -90,6 +93,13 @@ export function LocationFields({
           ))}
         </Select>
       </Field>
+      {tipo ? (
+        <div className="flex items-center gap-2 sm:col-span-2">
+          <span className="text-[13px] font-semibold text-ink-soft">Tipo</span>
+          <TipoBadge tipo={tipo} />
+          <span className="text-xs text-muted">Según la división: Packing o Campo</span>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -139,29 +149,6 @@ export function CategoriaFields({
           ))}
         </Select>
       </Field>
-    </div>
-  )
-}
-
-export function TipoConsultaField({
-  value,
-  onChange,
-}: {
-  value: TipoConsulta | ''
-  onChange: (value: TipoConsulta | '') => void
-}) {
-  return (
-    <div className="space-y-1.5">
-      <span className="text-[13px] font-semibold text-ink-soft">Tipo de consulta</span>
-      <SegmentedControl<TipoConsulta | ''>
-        etiqueta="Tipo de consulta"
-        value={value}
-        onChange={(tipo) => onChange(tipo === value ? '' : tipo)}
-        opciones={[
-          { valor: 'Campo', texto: 'Campo' },
-          { valor: 'Packing', texto: 'Packing' },
-        ]}
-      />
     </div>
   )
 }

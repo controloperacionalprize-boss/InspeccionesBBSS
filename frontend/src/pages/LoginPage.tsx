@@ -60,12 +60,12 @@ export function LoginPage() {
           <div className="flex size-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
             <Sprout className="size-5 text-brand-200" />
           </div>
-          <p className="font-display text-lg font-extrabold tracking-tight">Consultar Campo</p>
+          <p className="font-display text-lg font-extrabold tracking-tight">Inspecciones BBSS</p>
         </div>
 
         <div className="relative max-w-md space-y-6">
           <h1 className="font-display text-[38px] font-extrabold leading-[1.15] tracking-tight">
-            Control operacional de Campo y Packing en un solo lugar.
+            Inspecciones BBSS de Campo y Packing en un solo lugar.
           </h1>
           <p className="text-[15px] leading-relaxed text-brand-100/90">
             Inspecciones, consultas de personal e indumentaria, con trazabilidad por fundo y área.
@@ -91,7 +91,7 @@ export function LoginPage() {
             <div className="flex size-10 items-center justify-center rounded-lg bg-brand-900">
               <Sprout className="size-5 text-brand-200" />
             </div>
-            <p className="font-display text-lg font-extrabold tracking-tight text-ink">Consultar Campo</p>
+            <p className="font-display text-lg font-extrabold tracking-tight text-ink">Inspecciones BBSS</p>
           </div>
           <div>
             <h2 className="font-display text-[26px] font-extrabold tracking-tight text-ink">Iniciar sesión</h2>

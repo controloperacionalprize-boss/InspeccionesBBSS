@@ -69,12 +69,12 @@ function ListaEditable({
 
   const abrir = (objetivo: number | 'nuevo', valor = '') => {
     setEditando(objetivo)
-    setTexto(valor)
+    setTexto(valor.toLocaleUpperCase('es'))
   }
 
   const guardar = async (evento: FormEvent) => {
     evento.preventDefault()
-    const nombre = texto.trim()
+    const nombre = texto.trim().toLocaleUpperCase('es')
     if (!nombre) return
     const ok = await onGuardar(nombre, editando === 'nuevo' ? undefined : (editando ?? undefined))
     if (ok) setEditando(null)
@@ -86,11 +86,11 @@ function ListaEditable({
         autoFocus
         maxLength={nivel.maxLength}
         value={texto}
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={(e) => setTexto(e.target.value.toLocaleUpperCase('es'))}
         onKeyDown={(e) => e.key === 'Escape' && setEditando(null)}
-        placeholder={`Nombre de ${nivel.singular}`}
+        placeholder={`NOMBRE DE ${nivel.singular.toLocaleUpperCase('es')}`}
         aria-label={`Nombre de ${nivel.singular}`}
-        className="h-9 min-w-0 flex-1 rounded-lg border border-brand-400 px-3 text-sm outline-none ring-4 ring-brand-100"
+        className="h-9 min-w-0 flex-1 rounded-lg border border-brand-400 px-3 text-sm uppercase outline-none ring-4 ring-brand-100"
       />
       <IconButton label="Guardar" type="submit">
         <Check className="size-4" />

@@ -6,12 +6,14 @@ import { Button } from '../../components/Button'
 import { DniLookup } from '../../components/DniLookup'
 import { Alert, Notice, RegistroNoDisponible } from '../../components/Feedback'
 import { Field, Input } from '../../components/Field'
-import { LocationFields, TipoConsultaField } from '../../components/LocationFields'
+import { FirmaCanvas } from '../../components/FirmaCanvas'
+import { LocationFields } from '../../components/LocationFields'
 import { Card, FormFooter } from '../../components/Surface'
 import { useCatalogos } from '../../hooks/useCatalogos'
 import { hoyIso } from '../../lib/fechas'
+import { tipoConsultaDesdeDivision } from '../../lib/tipoConsulta'
 import { api, ApiError } from '../../services/apiClient'
-import type { Indumentaria, TipoConsulta } from '../../types/api'
+import type { Indumentaria } from '../../types/api'
 
 export function IndumentariaFormPage() {
   const { id } = useParams()
@@ -34,7 +36,6 @@ export function IndumentariaFormPage() {
   const [RESPONSABLE_REGISTRO, setResponsable] = useState(
     usuario ? `${usuario.nombre} ${usuario.apellido}` : '',
   )
-  const [TIPO_CONSULTA, setTipo] = useState<TipoConsulta | ''>('')
   const [noDisponible, setNoDisponible] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [guardado, setGuardado] = useState(Boolean((location.state as { guardado?: boolean } | null)?.guardado))
@@ -60,7 +61,6 @@ export function IndumentariaFormPage() {
         setTipoItem(item.TIPO)
         setFirma(item.FIRMA ?? '')
         setResponsable(item.RESPONSABLE_REGISTRO)
-        setTipo(item.TIPO_CONSULTA ?? '')
         setNoDisponible(item.ELIMINADO)
       })
       .catch((err: Error) => (err instanceof ApiError && err.status === 404 ? setNoDisponible(true) : setError(err.message)))
@@ -82,9 +82,9 @@ export function IndumentariaFormPage() {
         FECHA_ENTREGA,
         CANTIDAD,
         TIPO,
-        FIRMA: FIRMA || null,
+        FIRMA,
         RESPONSABLE_REGISTRO,
-        TIPO_CONSULTA: TIPO_CONSULTA || null,
+        TIPO_CONSULTA: tipoConsultaDesdeDivision(catalogos.divisiones, ID_DIVISION) || 'Campo',
       }
       if (esNueva) {
         const creada = await api.post<Indumentaria>('/indumentaria', cuerpo)
@@ -155,7 +155,6 @@ export function IndumentariaFormPage() {
               </Field>
             </div>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <TipoConsultaField value={TIPO_CONSULTA} onChange={setTipo} />
               <Field label="Responsable de registro">
                 <Input
                   required
@@ -164,13 +163,7 @@ export function IndumentariaFormPage() {
                   onChange={(e) => setResponsable(e.target.value)}
                 />
               </Field>
-              <Field
-                label="Firma"
-                hint="Provisional: texto o referencia, mientras se define la captura de firma."
-                className="sm:col-span-2"
-              >
-                <Input maxLength={8000} value={FIRMA} onChange={(e) => setFirma(e.target.value)} />
-              </Field>
+              <FirmaCanvas valor={FIRMA} />
             </div>
           </Card>
 

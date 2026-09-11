@@ -4,9 +4,13 @@ app.application.inspecciones.validaciones porque además valida categoría/
 subcategoría.
 """
 
+from typing import Literal
+
 from sqlalchemy.orm import Session
 
 from app.infrastructure.database.models import Area, Division, Empresa, Fundo
+
+TipoConsulta = Literal["Campo", "Packing"]
 
 
 class ReferenciaCatalogoInvalidaError(Exception):
@@ -33,3 +37,19 @@ def validar_empresa_fundo_division_area(session: Session, datos) -> None:
         raise ReferenciaCatalogoInvalidaError(f"El área {datos.ID_AREA} no existe")
     if area.ID_DIVISION != datos.ID_DIVISION:
         raise ReferenciaCatalogoInvalidaError("El área no pertenece a la división indicada")
+
+
+def tipo_consulta_segun_division(nombre: str | None) -> TipoConsulta:
+    """Packing solo si la división es Packing; cualquier otra es Campo."""
+    texto = (nombre or "").casefold()
+    return "Packing" if "packing" in texto else "Campo"
+
+
+def tipo_consulta_desde_division(session: Session, id_division: int) -> TipoConsulta:
+    division = session.get(Division, id_division)
+    return tipo_consulta_segun_division(None if division is None else division.NOMBRE)
+
+
+def aplicar_tipo_consulta(session: Session, payload: dict) -> dict:
+    payload["TIPO_CONSULTA"] = tipo_consulta_desde_division(session, payload["ID_DIVISION"])
+    return payload

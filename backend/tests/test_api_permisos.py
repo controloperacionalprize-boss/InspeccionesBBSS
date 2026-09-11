@@ -87,6 +87,7 @@ def test_inspector_puede_listar_empresas_pero_no_crearlas(db_session):
             headers=_headers(admin),
         )
         assert alta_admin.status_code == 201
+        assert alta_admin.json()["NOMBRE"] == "ACME"
     finally:
         app.dependency_overrides.clear()
 
@@ -145,5 +146,30 @@ def test_empresa_nombre_excede_varchar(db_session):
             headers=_headers(admin),
         )
         assert respuesta.status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_catalogo_guarda_nombre_en_mayusculas(db_session):
+    admin, _inspector = _sembrar_usuarios(db_session)
+    client = _cliente(db_session)
+    try:
+        respuesta = client.post(
+            "/api/empresas",
+            json={"NOMBRE": "  acme packing  "},
+            headers=_headers(admin),
+        )
+        assert respuesta.status_code == 201
+        assert respuesta.json()["NOMBRE"] == "ACME PACKING"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_fotos_consulta_inexistente_es_404(db_session):
+    _admin, inspector = _sembrar_usuarios(db_session)
+    client = _cliente(db_session)
+    try:
+        respuesta = client.get("/api/consultas/999999/fotos", headers=_headers(inspector))
+        assert respuesta.status_code == 404
     finally:
         app.dependency_overrides.clear()

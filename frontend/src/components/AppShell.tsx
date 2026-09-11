@@ -34,7 +34,7 @@ function Marca() {
         <Sprout className="size-5 text-brand-200" />
       </div>
       <div className="leading-tight">
-        <p className="font-display text-[15px] font-extrabold tracking-tight text-white">Consultar Campo</p>
+        <p className="font-display text-[15px] font-extrabold tracking-tight text-white">Inspecciones BBSS</p>
         <p className="text-xs text-brand-200/80">Campo · Packing</p>
       </div>
     </div>

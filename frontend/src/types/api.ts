@@ -79,7 +79,7 @@ export interface Indumentaria {
   FECHA_ENTREGA: string
   CANTIDAD: number
   TIPO: string
-  FIRMA: string | null
+  FIRMA: string
   RESPONSABLE_REGISTRO: string
   TIPO_CONSULTA: TipoConsulta | null
   ELIMINADO: boolean

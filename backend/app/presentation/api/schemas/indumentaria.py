@@ -14,7 +14,7 @@ class IndumentariaBase(BaseModel):
     FECHA_ENTREGA: date
     CANTIDAD: int = Field(..., gt=0)
     TIPO: str = Field(..., min_length=1, max_length=100)
-    FIRMA: str | None = Field(None, max_length=8000)
+    FIRMA: str = Field("", max_length=8000)
     RESPONSABLE_REGISTRO: str = Field(..., min_length=1, max_length=150)
     TIPO_CONSULTA: Literal["Campo", "Packing"] | None = None
 

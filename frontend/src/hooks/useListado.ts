@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, esCancelacion } from '../services/apiClient'
+import { onTiempoReal } from '../lib/tiempoReal'
 import type { TipoConsulta } from '../types/api'
 
 export interface Filtros {
@@ -116,13 +117,20 @@ export function useListado<T>(ruta: string, filtros: Filtros) {
     return () => control.abort()
   }, [url, recargas])
 
+  const recargar = useCallback(() => setRecargas((n) => n + 1), [])
+
+  useEffect(() => {
+    const recurso = ruta.replace(/^\//, '').split('/')[0]
+    return onTiempoReal((aviso) => {
+      if (aviso === recurso) recargar()
+    })
+  }, [ruta, recargar])
+
   // Si se borró el último registro de la última página, se retrocede a la anterior.
   const paginas = Math.max(1, Math.ceil(total / tamano))
   useEffect(() => {
     if (!cargando && pagina > 0 && pagina >= paginas) setEstadoPagina({ claveFiltros, pagina: paginas - 1 })
   }, [cargando, pagina, paginas, claveFiltros])
-
-  const recargar = useCallback(() => setRecargas((n) => n + 1), [])
 
   return { filas, total, pagina, paginas, setPagina, tamano, setTamano, cargando, error, recargar }
 }

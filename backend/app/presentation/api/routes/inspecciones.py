@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.application.catalogos.validaciones import aplicar_tipo_consulta
 from app.application.exportacion.excel import CONTENT_TYPE_XLSX, libro_excel, nombre_archivo
 from app.application.inspecciones.validaciones import (
     InspeccionInvalidaError,
@@ -30,6 +31,7 @@ from app.infrastructure.database.models import (
 )
 from app.infrastructure.database.session import get_session
 from app.presentation.api.dependencies import get_current_user, require_admin
+from app.presentation.api.tiempo_real import avisar
 from app.presentation.api.schemas.inspecciones import InspeccionCreate, InspeccionRead
 
 router = APIRouter(prefix="/inspecciones", tags=["Inspecciones"])
@@ -225,13 +227,14 @@ def crear(
     except InspeccionInvalidaError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
-    inspeccion = Inspeccion(**datos.model_dump())
+    inspeccion = Inspeccion(**aplicar_tipo_consulta(session, datos.model_dump()))
     session.add(inspeccion)
     try:
         session.commit()
     except IntegrityError:
         session.rollback()
         raise
+    avisar("inspecciones")
     session.refresh(inspeccion)
     return inspeccion
 
@@ -256,7 +259,7 @@ def actualizar(
     except InspeccionInvalidaError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
-    for campo, valor in datos.model_dump().items():
+    for campo, valor in aplicar_tipo_consulta(session, datos.model_dump()).items():
         setattr(inspeccion, campo, valor)
 
     try:
@@ -264,6 +267,7 @@ def actualizar(
     except IntegrityError:
         session.rollback()
         raise
+    avisar("inspecciones")
     session.refresh(inspeccion)
     return inspeccion
 
@@ -284,3 +288,4 @@ def eliminar(
     inspeccion.ELIMINADO = True
     inspeccion.FECHA_ELIMINACION = datetime.now(timezone.utc)
     session.commit()
+    avisar("inspecciones")

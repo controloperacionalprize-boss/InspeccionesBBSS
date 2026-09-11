@@ -166,7 +166,7 @@ class Indumentaria(Base):
     FECHA_ENTREGA: Mapped[date] = mapped_column(Date, nullable=False)
     CANTIDAD: Mapped[int] = mapped_column(Integer, nullable=False)
     TIPO: Mapped[str] = mapped_column(String(100), nullable=False)
-    FIRMA: Mapped[str | None] = mapped_column(Text, nullable=True)
+    FIRMA: Mapped[str] = mapped_column(Text, nullable=False, default="")
     RESPONSABLE_REGISTRO: Mapped[str] = mapped_column(String(150), nullable=False)
     TIPO_CONSULTA: Mapped[str | None] = mapped_column(Text, nullable=True)
     ELIMINADO: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

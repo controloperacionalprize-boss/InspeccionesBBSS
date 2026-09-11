@@ -11,6 +11,7 @@ import { TablaRegistros, type Columna } from '../../components/TablaRegistros'
 import { useCatalogos } from '../../hooks/useCatalogos'
 import { aQueryExportar, contarFiltrosActivos, filtrosVacios, useListado, type Filtros } from '../../hooks/useListado'
 import { formatFecha } from '../../lib/fechas'
+import { tipoVisible } from '../../lib/tipoConsulta'
 import { api } from '../../services/apiClient'
 import type { Indumentaria } from '../../types/api'
 
@@ -60,7 +61,7 @@ export function IndumentariaPage() {
       celda: (f) => (
         <div className="space-y-1">
           <p>{formatFecha(f.FECHA_ENTREGA)}</p>
-          <TipoBadge tipo={f.TIPO_CONSULTA} />
+          <TipoBadge tipo={tipoVisible(nombre.division[f.ID_DIVISION], f.TIPO_CONSULTA)} />
         </div>
       ),
     },
@@ -128,7 +129,7 @@ export function IndumentariaPage() {
           tarjeta={(f) => (
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <TipoBadge tipo={f.TIPO_CONSULTA} />
+                <TipoBadge tipo={tipoVisible(nombre.division[f.ID_DIVISION], f.TIPO_CONSULTA)} />
                 <span className="text-xs text-muted">{formatFecha(f.FECHA_ENTREGA)}</span>
               </div>
               <p className="truncate text-sm font-semibold text-ink">

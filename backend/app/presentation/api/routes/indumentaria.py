@@ -13,12 +13,14 @@ from sqlalchemy.orm import Session
 
 from app.application.catalogos.validaciones import (
     ReferenciaCatalogoInvalidaError,
+    aplicar_tipo_consulta,
     validar_empresa_fundo_division_area,
 )
 from app.application.exportacion.excel import CONTENT_TYPE_XLSX, libro_excel, nombre_archivo
 from app.infrastructure.database.models import Area, Division, Empresa, Fundo, Indumentaria
 from app.infrastructure.database.session import get_session
 from app.presentation.api.dependencies import get_current_user, require_admin
+from app.presentation.api.tiempo_real import avisar
 from app.presentation.api.schemas.indumentaria import IndumentariaCreate, IndumentariaRead
 
 router = APIRouter(prefix="/indumentaria", tags=["Indumentaria"])
@@ -211,13 +213,14 @@ def crear(
     except ReferenciaCatalogoInvalidaError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
-    entrega = Indumentaria(**datos.model_dump())
+    entrega = Indumentaria(**aplicar_tipo_consulta(session, datos.model_dump()))
     session.add(entrega)
     try:
         session.commit()
     except IntegrityError:
         session.rollback()
         raise
+    avisar("indumentaria")
     session.refresh(entrega)
     return entrega
 
@@ -242,7 +245,7 @@ def actualizar(
     except ReferenciaCatalogoInvalidaError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
-    for campo, valor in datos.model_dump().items():
+    for campo, valor in aplicar_tipo_consulta(session, datos.model_dump()).items():
         setattr(entrega, campo, valor)
 
     try:
@@ -250,6 +253,7 @@ def actualizar(
     except IntegrityError:
         session.rollback()
         raise
+    avisar("indumentaria")
     session.refresh(entrega)
     return entrega
 
@@ -270,3 +274,4 @@ def eliminar(
     entrega.ELIMINADO = True
     entrega.FECHA_ELIMINACION = datetime.now(timezone.utc)
     session.commit()
+    avisar("indumentaria")

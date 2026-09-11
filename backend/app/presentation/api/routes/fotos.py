@@ -1,20 +1,21 @@
-"""Endpoints de fotos adjuntas a Inspecciones (subida múltiple a object storage).
+"""Fotos adjuntas a Inspecciones y Consultas (subida múltiple a object storage).
 
 Reglas de robustez:
 - Se valida TODO el lote (tipo real por magic bytes + tamaño) antes de subir
   cualquier archivo a S3 -- si un archivo del lote falla, no se sube nada.
 - Si falla la subida de un archivo a mitad del lote (error de red, etc.), se
   borran de S3 los que ya se habían subido en esa misma solicitud.
-- No se permite agregar ni quitar fotos de una inspección con ELIMINADO=True.
+- No se permite agregar ni quitar fotos de un registro con ELIMINADO=True.
 """
 
 import uuid
 from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.infrastructure.database.models import Foto, Inspeccion
+from app.infrastructure.database.models import Consulta, Foto, Inspeccion
 from app.infrastructure.database.session import get_session
 from app.infrastructure.storage.s3_storage import (
     StorageNoConfiguradoError,
@@ -25,14 +26,14 @@ from app.infrastructure.storage.s3_storage import (
 from app.presentation.api.dependencies import get_current_user
 from app.presentation.api.rate_limit import limiter
 from app.presentation.api.schemas.fotos import FotoRead
+from app.presentation.api.tiempo_real import avisar
 
 router = APIRouter(tags=["Fotos"])
 
 _TAMANO_MAXIMO_BYTES = 8 * 1024 * 1024
 _MAX_ARCHIVOS_POR_SUBIDA = 10
+Recurso = Literal["inspecciones", "consultas"]
 
-# Firma (magic bytes) -> (content-type real, extensión). El content-type que
-# manda el cliente no es confiable; el tipo real del archivo sí.
 _FIRMAS: list[tuple[bytes, str, str]] = [
     (b"\xff\xd8\xff", "image/jpeg", "jpg"),
     (b"\x89PNG\r\n\x1a\n", "image/png", "png"),
@@ -64,42 +65,24 @@ def _obtener_inspeccion_o_404(session: Session, inspeccion_id: int) -> Inspeccio
     return inspeccion
 
 
-@router.get("/inspecciones/{inspeccion_id}/fotos", response_model=list[FotoRead])
-def listar_fotos_inspeccion(
-    inspeccion_id: int,
-    session: Session = Depends(get_session),
-    _usuario=Depends(get_current_user),
-) -> list[FotoRead]:
-    _obtener_inspeccion_o_404(session, inspeccion_id)
+def _obtener_consulta_o_404(session: Session, consulta_id: int) -> Consulta:
+    consulta = session.get(Consulta, consulta_id)
+    if consulta is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Consulta no encontrada")
+    return consulta
 
+
+def _listar_fotos(session: Session, columna, registro_id: int) -> list[FotoRead]:
     fotos = (
         session.query(Foto)
-        .filter(Foto.ID_INSPECCION == inspeccion_id)
+        .filter(columna == registro_id)
         .order_by(Foto.ORDEN, Foto.ID)
         .all()
     )
     return [_a_lectura(foto) for foto in fotos]
 
 
-@router.post(
-    "/inspecciones/{inspeccion_id}/fotos",
-    response_model=list[FotoRead],
-    status_code=status.HTTP_201_CREATED,
-)
-@limiter.limit("20/minute")
-def subir_fotos_inspeccion(
-    request: Request,
-    inspeccion_id: int,
-    archivos: list[UploadFile],
-    session: Session = Depends(get_session),
-    _usuario=Depends(get_current_user),
-) -> list[FotoRead]:
-    inspeccion = _obtener_inspeccion_o_404(session, inspeccion_id)
-    if inspeccion.ELIMINADO:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "No se pueden agregar fotos a una inspección eliminada"
-        )
-
+def _validar_lote(archivos: list[UploadFile]) -> list[tuple[bytes, str, str]]:
     if not archivos:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se recibió ningún archivo")
     if len(archivos) > _MAX_ARCHIVOS_POR_SUBIDA:
@@ -108,9 +91,7 @@ def subir_fotos_inspeccion(
             f"Máximo {_MAX_ARCHIVOS_POR_SUBIDA} fotos por subida",
         )
 
-    # Fase 1: validar TODO el lote (lectura acotada + tipo real) antes de
-    # subir nada. Si algo falla acá, S3 no se toca.
-    validados: list[tuple[bytes, str, str]] = []  # (contenido, content_type, extension)
+    validados: list[tuple[bytes, str, str]] = []
     for archivo in archivos:
         contenido = archivo.file.read(_TAMANO_MAXIMO_BYTES + 1)
         if len(contenido) > _TAMANO_MAXIMO_BYTES:
@@ -131,20 +112,37 @@ def subir_fotos_inspeccion(
             )
         content_type, extension = detectado
         validados.append((contenido, content_type, extension))
+    return validados
 
-    # Fase 2: subir a S3 y crear las filas. Si algo falla a mitad de camino,
-    # se revierte lo ya subido en esta misma solicitud.
-    siguiente_orden = session.query(Foto).filter(Foto.ID_INSPECCION == inspeccion_id).count()
+
+def _guardar_lote(
+    session: Session,
+    archivos: list[UploadFile],
+    *,
+    recurso: Recurso,
+    registro_id: int,
+) -> list[FotoRead]:
+    validados = _validar_lote(archivos)
+    if recurso == "inspecciones":
+        filtro = Foto.ID_INSPECCION == registro_id
+        fk = {"ID_INSPECCION": registro_id}
+        prefijo = f"inspecciones/{registro_id}"
+    else:
+        filtro = Foto.ID_CONSULTA == registro_id
+        fk = {"ID_CONSULTA": registro_id}
+        prefijo = f"consultas/{registro_id}"
+
+    siguiente_orden = session.query(Foto).filter(filtro).count()
     claves_subidas: list[str] = []
     nuevas: list[Foto] = []
     try:
         for contenido, content_type, extension in validados:
-            clave = f"inspecciones/{inspeccion_id}/{uuid.uuid4().hex}.{extension}"
+            clave = f"{prefijo}/{uuid.uuid4().hex}.{extension}"
             subir_objeto(clave, contenido, content_type)
             claves_subidas.append(clave)
 
             foto = Foto(
-                ID_INSPECCION=inspeccion_id,
+                **fk,
                 OBJECT_KEY=clave,
                 ORDEN=siguiente_orden,
                 FECHA_SUBIDA=datetime.now(timezone.utc),
@@ -171,9 +169,72 @@ def subir_fotos_inspeccion(
                 pass
         raise
 
+    avisar(recurso)
     for foto in nuevas:
         session.refresh(foto)
     return [_a_lectura(foto) for foto in nuevas]
+
+
+@router.get("/inspecciones/{inspeccion_id}/fotos", response_model=list[FotoRead])
+def listar_fotos_inspeccion(
+    inspeccion_id: int,
+    session: Session = Depends(get_session),
+    _usuario=Depends(get_current_user),
+) -> list[FotoRead]:
+    _obtener_inspeccion_o_404(session, inspeccion_id)
+    return _listar_fotos(session, Foto.ID_INSPECCION, inspeccion_id)
+
+
+@router.post(
+    "/inspecciones/{inspeccion_id}/fotos",
+    response_model=list[FotoRead],
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("20/minute")
+def subir_fotos_inspeccion(
+    request: Request,
+    inspeccion_id: int,
+    archivos: list[UploadFile],
+    session: Session = Depends(get_session),
+    _usuario=Depends(get_current_user),
+) -> list[FotoRead]:
+    inspeccion = _obtener_inspeccion_o_404(session, inspeccion_id)
+    if inspeccion.ELIMINADO:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No se pueden agregar fotos a una inspección eliminada"
+        )
+    return _guardar_lote(session, archivos, recurso="inspecciones", registro_id=inspeccion_id)
+
+
+@router.get("/consultas/{consulta_id}/fotos", response_model=list[FotoRead])
+def listar_fotos_consulta(
+    consulta_id: int,
+    session: Session = Depends(get_session),
+    _usuario=Depends(get_current_user),
+) -> list[FotoRead]:
+    _obtener_consulta_o_404(session, consulta_id)
+    return _listar_fotos(session, Foto.ID_CONSULTA, consulta_id)
+
+
+@router.post(
+    "/consultas/{consulta_id}/fotos",
+    response_model=list[FotoRead],
+    status_code=status.HTTP_201_CREATED,
+)
+@limiter.limit("20/minute")
+def subir_fotos_consulta(
+    request: Request,
+    consulta_id: int,
+    archivos: list[UploadFile],
+    session: Session = Depends(get_session),
+    _usuario=Depends(get_current_user),
+) -> list[FotoRead]:
+    consulta = _obtener_consulta_o_404(session, consulta_id)
+    if consulta.ELIMINADO:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No se pueden agregar fotos a una consulta eliminada"
+        )
+    return _guardar_lote(session, archivos, recurso="consultas", registro_id=consulta_id)
 
 
 @router.delete("/fotos/{foto_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -186,6 +247,7 @@ def eliminar_foto(
     if foto is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Foto no encontrada")
 
+    recurso: Recurso = "inspecciones"
     if foto.ID_INSPECCION is not None:
         inspeccion = session.get(Inspeccion, foto.ID_INSPECCION)
         if inspeccion is not None and inspeccion.ELIMINADO:
@@ -193,17 +255,21 @@ def eliminar_foto(
                 status.HTTP_409_CONFLICT,
                 "No se pueden quitar fotos de una inspección eliminada",
             )
+    elif foto.ID_CONSULTA is not None:
+        recurso = "consultas"
+        consulta = session.get(Consulta, foto.ID_CONSULTA)
+        if consulta is not None and consulta.ELIMINADO:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "No se pueden quitar fotos de una consulta eliminada",
+            )
 
-    # Se borra primero en BD y recién después en S3: si el commit falla, no
-    # queda una referencia rota apuntando a un objeto ya borrado.
     clave = foto.OBJECT_KEY
     session.delete(foto)
     session.commit()
+    avisar(recurso)
 
     try:
         eliminar_objeto(clave)
     except Exception:
-        # La fila ya no existe en BD (fuente de verdad); si el borrado en S3
-        # falla, el objeto queda huérfano pero no hay ninguna referencia
-        # rota visible para el usuario.
         pass

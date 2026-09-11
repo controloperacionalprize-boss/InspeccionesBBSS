@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+import asyncio
 import logging
 from logging import Logger
 
@@ -20,6 +22,7 @@ from app.presentation.api.security_headers import SecurityHeadersMiddleware
 from app.presentation.api.rate_limit import limiter
 from app.presentation.api.router import api_router
 from app.presentation.api.routes import health
+from app.presentation.api.tiempo_real import hub
 
 
 def configurar_logging() -> Logger:
@@ -28,6 +31,13 @@ def configurar_logging() -> Logger:
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
     return logging.getLogger("consultar_campo")
+
+
+@asynccontextmanager
+async def lifespan(_application: FastAPI):
+    hub.asignar_loop(asyncio.get_running_loop())
+    yield
+    await hub.cerrar_todas()
 
 
 def create_app() -> FastAPI:
@@ -43,6 +53,7 @@ def create_app() -> FastAPI:
         docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url=None if settings.es_produccion else "/openapi.json",
+        lifespan=lifespan,
     )
     application.state.limiter = limiter
     application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

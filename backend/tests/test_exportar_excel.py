@@ -84,7 +84,7 @@ def _sembrar(session):
         FECHA_ENTREGA=date(2026, 1, 1),
         CANTIDAD=2,
         TIPO="Guantes",
-        FIRMA=None,
+        FIRMA="",
         RESPONSABLE_REGISTRO="Inspector Prueba",
     )
     session.add_all([inspeccion, consulta, indumentaria])
@@ -136,7 +136,7 @@ def test_exportar_consultas_devuelve_xlsx(db_session):
         app.dependency_overrides.clear()
 
 
-def test_exportar_indumentaria_devuelve_xlsx_con_firma_nula(db_session):
+def test_exportar_indumentaria_devuelve_xlsx_con_firma_vacia(db_session):
     usuario = _sembrar(db_session)
     client = _cliente(db_session)
     try:

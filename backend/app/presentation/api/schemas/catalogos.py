@@ -1,7 +1,18 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
-class EmpresaCreate(BaseModel):
+class NombreMayusculas(BaseModel):
+    """Los maestros se guardan en mayúsculas para evitar duplicados por mayúsculas/minúsculas."""
+
+    @field_validator("NOMBRE", mode="before", check_fields=False)
+    @classmethod
+    def nombre_en_mayusculas(cls, valor: object) -> object:
+        if isinstance(valor, str):
+            return valor.strip().upper()
+        return valor
+
+
+class EmpresaCreate(NombreMayusculas):
     NOMBRE: str = Field(..., min_length=1, max_length=30)
 
 
@@ -11,7 +22,7 @@ class EmpresaRead(EmpresaCreate):
     model_config = {"from_attributes": True}
 
 
-class DivisionCreate(BaseModel):
+class DivisionCreate(NombreMayusculas):
     NOMBRE: str = Field(..., min_length=1, max_length=100)
 
 
@@ -21,7 +32,7 @@ class DivisionRead(DivisionCreate):
     model_config = {"from_attributes": True}
 
 
-class FundoBase(BaseModel):
+class FundoBase(NombreMayusculas):
     NOMBRE: str = Field(..., min_length=1, max_length=50)
     ID_EMPRESA: int
 
@@ -36,7 +47,7 @@ class FundoRead(FundoBase):
     model_config = {"from_attributes": True}
 
 
-class AreaBase(BaseModel):
+class AreaBase(NombreMayusculas):
     NOMBRE: str = Field(..., min_length=1, max_length=100)
     ID_DIVISION: int
 
@@ -51,7 +62,7 @@ class AreaRead(AreaBase):
     model_config = {"from_attributes": True}
 
 
-class CategoriaCreate(BaseModel):
+class CategoriaCreate(NombreMayusculas):
     NOMBRE: str = Field(..., min_length=1, max_length=150)
 
 
@@ -68,7 +79,7 @@ class RolRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SubcategoriaBase(BaseModel):
+class SubcategoriaBase(NombreMayusculas):
     NOMBRE: str = Field(..., min_length=1, max_length=150)
     ID_CATEGORIA: int
 

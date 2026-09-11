@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.infrastructure.database.session import get_session
 from app.presentation.api.dependencies import get_current_user, require_admin
+from app.presentation.api.tiempo_real import avisar
 
 ModelT = TypeVar("ModelT")
 ReadSchemaT = TypeVar("ReadSchemaT", bound=BaseModel)
@@ -58,6 +59,7 @@ def crear_router_catalogo(
         except IntegrityError:
             session.rollback()
             raise
+        avisar("catalogos")
         session.refresh(item)
         return item
 
@@ -78,6 +80,7 @@ def crear_router_catalogo(
         except IntegrityError:
             session.rollback()
             raise
+        avisar("catalogos")
         session.refresh(item)
         return item
 
@@ -96,5 +99,6 @@ def crear_router_catalogo(
         except IntegrityError:
             session.rollback()
             raise
+        avisar("catalogos")
 
     return router

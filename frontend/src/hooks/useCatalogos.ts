@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { cacheado, invalidar, leerCache } from '../lib/cache'
+import { onTiempoReal } from '../lib/tiempoReal'
 import { api } from '../services/apiClient'
 import type { Area, CatalogoItem, Fundo, Subcategoria } from '../types/api'
 
@@ -43,6 +44,10 @@ export function useCatalogos() {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar los catálogos')
     }
   }, [])
+
+  useEffect(() => onTiempoReal((recurso) => {
+    if (recurso === 'catalogos') void recargar()
+  }), [recargar])
 
   const actual = datos ?? vacios
   const nombre = useMemo(() => {

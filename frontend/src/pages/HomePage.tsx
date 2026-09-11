@@ -8,7 +8,9 @@ import { Alert, EmptyState, TipoBadge } from '../components/Feedback'
 import { Card, DosLineas, Table, Td, Th } from '../components/Surface'
 import { useCatalogos } from '../hooks/useCatalogos'
 import { formatFecha, inicioMesIso } from '../lib/fechas'
-import { cacheado, leerCache } from '../lib/cache'
+import { tipoVisible } from '../lib/tipoConsulta'
+import { cacheado, invalidar, leerCache } from '../lib/cache'
+import { onTiempoReal } from '../lib/tiempoReal'
 import { api } from '../services/apiClient'
 import type { Inspeccion, Resumen } from '../types/api'
 
@@ -127,6 +129,18 @@ export function HomePage() {
   const [resumen, setResumen] = useState<Resumen | undefined>(() => leerCache<Resumen>(claveResumen))
   const [recientes, setRecientes] = useState<Inspeccion[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
+
+  useEffect(
+    () =>
+      onTiempoReal((recurso) => {
+        if (recurso === 'inspecciones' || recurso === 'consultas' || recurso === 'indumentaria') {
+          invalidar(claveResumen)
+          setTick((n) => n + 1)
+        }
+      }),
+    [claveResumen],
+  )
 
   useEffect(() => {
     const control = new AbortController()
@@ -138,7 +152,7 @@ export function HomePage() {
       .then(setRecientes)
       .catch((err: Error) => err.name !== 'AbortError' && setError(err.message))
     return () => control.abort()
-  }, [claveResumen, desde])
+  }, [claveResumen, desde, tick])
 
   const mes = new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric' }).format(new Date())
   const unidades = resumen?.unidades_entregadas ?? 0
@@ -241,7 +255,7 @@ export function HomePage() {
                     </Td>
                     <Td className="hidden sm:table-cell xl:hidden 2xl:table-cell">{nombre.categoria[fila.ID_CATEGORIA] ?? '—'}</Td>
                     <Td>
-                      <TipoBadge tipo={fila.TIPO_CONSULTA} />
+                      <TipoBadge tipo={tipoVisible(nombre.division[fila.ID_DIVISION], fila.TIPO_CONSULTA)} />
                     </Td>
                     <Td className="whitespace-nowrap text-muted">{formatFecha(fila.FECHA_OBSERVACION)}</Td>
                   </tr>

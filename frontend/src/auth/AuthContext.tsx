@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { cacheado, limpiarCache } from '../lib/cache'
+import { conectarTiempoReal } from '../lib/tiempoReal'
 import { api, setOnUnauthorized, TOKEN_KEY, USER_KEY } from '../services/apiClient'
 import type { LoginResponse, Usuario } from '../types/api'
 
@@ -49,6 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOnUnauthorized(logout)
     return () => setOnUnauthorized(null)
   }, [logout])
+
+  useEffect(() => {
+    if (!token) return
+    return conectarTiempoReal(token)
+  }, [token])
 
   // La sesión guardada se valida una sola vez al abrir la app (el login ya trae el usuario).
   useEffect(() => {

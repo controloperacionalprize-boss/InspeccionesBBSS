@@ -13,12 +13,14 @@ from sqlalchemy.orm import Session
 
 from app.application.catalogos.validaciones import (
     ReferenciaCatalogoInvalidaError,
+    aplicar_tipo_consulta,
     validar_empresa_fundo_division_area,
 )
 from app.application.exportacion.excel import CONTENT_TYPE_XLSX, libro_excel, nombre_archivo
 from app.infrastructure.database.models import Area, Consulta, Division, Empresa, Fundo
 from app.infrastructure.database.session import get_session
 from app.presentation.api.dependencies import get_current_user, require_admin
+from app.presentation.api.tiempo_real import avisar
 from app.presentation.api.schemas.consultas import (
     ConsultaCreate,
     ConsultaRead,
@@ -208,13 +210,14 @@ def crear(
     except ReferenciaCatalogoInvalidaError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
-    consulta = Consulta(**datos.model_dump())
+    consulta = Consulta(**aplicar_tipo_consulta(session, datos.model_dump()))
     session.add(consulta)
     try:
         session.commit()
     except IntegrityError:
         session.rollback()
         raise
+    avisar("consultas")
     session.refresh(consulta)
     return consulta
 
@@ -240,7 +243,7 @@ def actualizar(
     except ReferenciaCatalogoInvalidaError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
-    for campo, valor in datos.model_dump().items():
+    for campo, valor in aplicar_tipo_consulta(session, datos.model_dump()).items():
         setattr(consulta, campo, valor)
 
     try:
@@ -248,6 +251,7 @@ def actualizar(
     except IntegrityError:
         session.rollback()
         raise
+    avisar("consultas")
     session.refresh(consulta)
     return consulta
 
@@ -268,3 +272,4 @@ def eliminar(
     consulta.ELIMINADO = True
     consulta.FECHA_ELIMINACION = datetime.now(timezone.utc)
     session.commit()
+    avisar("consultas")
